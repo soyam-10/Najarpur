@@ -10,6 +10,7 @@ const LandmarkSchema = new Schema<Landmark>(
     lat: { type: Number, required: true },
     lng: { type: Number, required: true },
     coverImage: { type: String, required: true },
+    modelPath: { type: String, required: false },
   },
   { timestamps: true }
 );

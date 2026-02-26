@@ -35,10 +35,10 @@ export default function LandmarkMarker({ landmark }: Props) {
       {/* Pin stem */}
       <mesh position={[0, 0.07, 0]}>
         <cylinderGeometry args={[0.01, 0.01, 0.14, 8]} />
-        <meshStandardMaterial color="#ffffff" opacity={0.6} transparent />
+        <meshStandardMaterial color="#ffd700" opacity={0.7} transparent />
       </mesh>
 
-      {/* Pin head — clickable */}
+      {/* Pin head */}
       <mesh
         ref={meshRef}
         position={[0, 0.15, 0]}
@@ -55,9 +55,19 @@ export default function LandmarkMarker({ landmark }: Props) {
       >
         <sphereGeometry args={[hovered ? 0.1 : 0.08, 16, 16]} />
         <meshStandardMaterial
-          color={hovered ? "#4ade80" : "#16a34a"}
-          emissive={hovered ? "#4ade80" : "#15803d"}
-          emissiveIntensity={hovered ? 0.6 : 0.3}
+          color={hovered ? "#ffd700" : "#ff9933"}
+          emissive={hovered ? "#ffd700" : "#cc7700"}
+          emissiveIntensity={hovered ? 1.2 : 0.6}
+        />
+      </mesh>
+
+      {/* Ground ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
+        <ringGeometry args={[0.1, 0.13, 32]} />
+        <meshStandardMaterial
+          color={hovered ? "#ffd700" : "#ff9933"}
+          opacity={hovered ? 0.9 : 0.5}
+          transparent
         />
       </mesh>
 
@@ -74,15 +84,6 @@ export default function LandmarkMarker({ landmark }: Props) {
         </Html>
       )}
 
-      {/* Ground ring */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
-        <ringGeometry args={[0.1, 0.13, 32]} />
-        <meshStandardMaterial
-          color={hovered ? "#4ade80" : "#16a34a"}
-          opacity={hovered ? 0.8 : 0.4}
-          transparent
-        />
-      </mesh>
     </group>
   );
 }

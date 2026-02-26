@@ -31,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="w-64 border-r border-white/10 flex flex-col p-6 gap-6 shrink-0">
         <div>
           <p className="text-green-400 text-xs tracking-widest uppercase mb-1">Admin Panel</p>
-          <h1 className="text-xl font-bold">Kemlipur</h1>
+          <h1 className="text-xl font-bold">Najarpur</h1>
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">

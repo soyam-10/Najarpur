@@ -9,6 +9,7 @@ interface EditForm {
   nepaliName: string;
   description: string;
   coverImage: string;
+  modelPath: string;
   lat: string;
   lng: string;
 }
@@ -22,6 +23,7 @@ export default function EditLandmark() {
     nepaliName: "",
     description: "",
     coverImage: "",
+    modelPath: "",
     lat: "",
     lng: "",
   });
@@ -38,6 +40,7 @@ export default function EditLandmark() {
             nepaliName: l.nepaliName || "",
             description: l.description || "",
             coverImage: l.coverImage || "",
+            modelPath: l.modelPath || "",
             lat: String(l.lat || ""),
             lng: String(l.lng || ""),
           });
@@ -59,6 +62,7 @@ export default function EditLandmark() {
         nepaliName: form.nepaliName,
         description: form.description,
         coverImage: form.coverImage,
+        modelPath: form.modelPath || undefined,
         position,
         lat,
         lng,
@@ -77,6 +81,8 @@ export default function EditLandmark() {
             { label: "English Name", key: "name" },
             { label: "Nepali Name", key: "nepaliName" },
             { label: "Cover Image Path", key: "coverImage" },
+            { label: "3D Model Path (optional)", key: "modelPath" },
+
           ] as { label: string; key: keyof EditForm }[]
         ).map((field) => (
           <div key={field.key} className="space-y-2">

@@ -27,7 +27,7 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold">Dashboard</h2>
-        <p className="text-gray-500 text-sm mt-1">Welcome back. Manage Kemlipur content below.</p>
+        <p className="text-gray-500 text-sm mt-1">Welcome back. Manage Najarpur content below.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

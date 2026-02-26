@@ -7,6 +7,7 @@ export interface Landmark {
   lat: number;
   lng: number;
   coverImage: string;
+  modelPath?: string;
 }
 export interface Event {
   _id?: string;
