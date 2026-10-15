@@ -4,11 +4,44 @@ import { useMapStore } from "@/store/mapStore";
 import { useLandmarkData } from "@/hooks/UseLandmarkData";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, MapPin, Map, Newspaper, CalendarDays, Clock } from "lucide-react";
+import { MapPin, Map, Newspaper, CalendarDays } from "lucide-react";
+import { village } from "@/config/village";
+
+// ── small helpers ──────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div
+        className="w-5 h-px"
+        style={{ background: "var(--village-accent, #C97F2A)" }}
+      />
+      <span
+        style={{
+          fontSize: "10px",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "var(--village-accent, #C97F2A)",
+          fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 500,
+        }}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
+function SkeletonBlock({ h = "h-20" }: { h?: string }) {
+  return (
+    <div
+      className={`${h} rounded w-full animate-pulse`}
+      style={{ background: "var(--muted)" }}
+    />
+  );
+}
+
+// ── main component ─────────────────────────────────────────────────────────
 
 export default function LandmarkOverlay() {
   const { activeLandmark, isOverlayOpen, closeOverlay } = useMapStore();
@@ -18,233 +51,418 @@ export default function LandmarkOverlay() {
     <AnimatePresence>
       {isOverlayOpen && (
         <>
-          {/* Dramatic flash/ripple on open */}
+          {/* Warm flash on open — like a lamp being lit */}
           <motion.div
-            initial={{ opacity: 0.6, scale: 0.95 }}
-            animate={{ opacity: 0, scale: 1.05 }}
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="fixed inset-0 z-40 bg-white dark:bg-white pointer-events-none"
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="fixed inset-0 z-40 pointer-events-none"
+            style={{ background: "var(--village-accent, #C97F2A)" }}
           />
 
-          {/* Main overlay — slides up from bottom */}
+          {/* Main overlay */}
           <motion.div
             initial={{ opacity: 0, y: "100%" }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "100%" }}
-            transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
-            className="fixed inset-0 z-50 flex flex-col bg-background overflow-y-auto"
-            style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
+            transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+            className="fixed inset-0 z-50 overlay-scroll"
+            style={{
+              background: "var(--background)",
+              overflowY: "auto",
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}
           >
-            {/* Fixed back bar */}
-            <motion.div
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="fixed top-0 left-0 right-0 z-20 px-6 pt-6 pb-4 flex items-center justify-between"
-              style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)" }}
-            >
-              <Button
-                onClick={closeOverlay}
-                size="lg"
-                className="gap-2 rounded-full"
-                style={{
-                  backdropFilter: "blur(20px)",
-                  WebkitBackdropFilter: "blur(20px)",
-                  background: "rgba(255,255,255,0.15)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                }}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Back
-              </Button>
+            {/* ── Layout: side-by-side on md+, stacked on mobile ── */}
+            <div className="md:flex md:min-h-screen">
 
-              {landmark && (
-                <Badge
-                  variant="outline"
-                  className="border-white/20 text-lg text-primary-foreground rounded-full px-3 py-1"
+              {/* ── Left: fixed-position hero image ── */}
+              <div
+                className="relative w-full shrink-0 md:sticky md:top-0 md:self-start"
+                style={{ height: "55vw", maxHeight: "100vh", minHeight: "260px" }}
+              >
+                {/* Image */}
+                {landmark ? (
+                  <Image
+                    src={landmark.coverImage}
+                    alt={landmark.name}
+                    fill
+                    className="object-cover"
+                    priority
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full animate-pulse" style={{ background: "var(--muted)" }} />
+                )}
+
+                {/* Gradient over image */}
+                <div
+                  className="absolute inset-0"
                   style={{
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    background: "rgba(255,255,255,0.15)",
+                    background:
+                      "linear-gradient(to top, rgba(15,8,0,0.88) 0%, rgba(15,8,0,0.2) 55%, rgba(15,8,0,0.55) 100%)",
+                  }}
+                />
+
+                {/* Back button — top left */}
+                <motion.button
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  onClick={closeOverlay}
+                  aria-label="Go back"
+                  className="absolute top-5 left-5 z-20 flex items-center gap-2 px-4 py-2 rounded-full transition-all"
+                  style={{
+                    backdropFilter: "blur(16px)",
+                    WebkitBackdropFilter: "blur(16px)",
+                    background: "rgba(15,8,0,0.5)",
+                    border: "1px solid rgba(245,236,215,0.15)",
+                    color: "rgba(245,236,215,0.85)",
+                    fontSize: "13px",
+                    fontWeight: 400,
                   }}
                 >
-                  {landmark.nepaliName}
-                </Badge>
-              )}
-            </motion.div>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 12H5M12 5l-7 7 7 7" />
+                  </svg>
+                  Back
+                </motion.button>
 
-            {/* Hero image */}
-            <div className="relative w-full shrink-0" style={{ height: "70vh" }}>
-              {landmark ? (
-                <Image
-                  src={landmark.coverImage}
-                  alt={landmark.name}
-                  fill
-                  className="object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  priority
-                />
-              ) : (
-                <div className="w-full h-full bg-muted animate-pulse" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                {/* Village badge — top right */}
+                {landmark && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.35 }}
+                    className="absolute top-5 right-5 z-20"
+                  >
+                    <span
+                      className="text-sm"
+                      style={{
+                        backdropFilter: "blur(12px)",
+                        WebkitBackdropFilter: "blur(12px)",
+                        background: "rgba(15,8,0,0.5)",
+                        border: "1px solid rgba(245,236,215,0.15)",
+                        borderRadius: "100px",
+                        padding: "5px 14px",
+                        color: "rgba(245,236,215,0.7)",
+                        fontFamily: "'DM Sans', sans-serif",
+                        display: "block",
+                      }}
+                    >
+                      {landmark.nepaliName}
+                    </span>
+                  </motion.div>
+                )}
 
-              {landmark && (
-                <motion.div
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.35, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="absolute bottom-0 left-0 right-0 px-8 pb-10"
-                >
-                  <p className="text-xs tracking-[0.25em] uppercase mb-2 text-white/50">
-                    Najarpur · Terai
-                  </p>
-                  <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight tracking-tight">
-                    {landmark.name}
-                  </h1>
-                </motion.div>
-              )}
-            </div>
+                {/* Landmark name over image — bottom */}
+                {landmark && (
+                  <motion.div
+                    initial={{ y: 24, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="absolute bottom-0 left-0 right-0 px-7 pb-8"
+                  >
+                    <p
+                      style={{
+                        fontSize: "10px",
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        color: "rgba(245,236,215,0.45)",
+                        fontFamily: "'DM Sans', sans-serif",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      {village.name} · {village.locationShort}
+                    </p>
+                    <h1
+                      style={{
+                        fontFamily: "'Playfair Display', Georgia, serif",
+                        fontSize: "clamp(1.6rem, 4vw, 2.8rem)",
+                        fontWeight: 600,
+                        lineHeight: 1.15,
+                        color: "#F5ECD7",
+                        letterSpacing: "-0.02em",
+                        textShadow: "0 2px 24px rgba(0,0,0,0.7)",
+                        margin: 0,
+                      }}
+                    >
+                      {landmark.name}
+                    </h1>
+                  </motion.div>
+                )}
+              </div>
 
-            {/* Content sheet */}
-            <div className="relative z-10 -mt-6 rounded-t-[2rem] bg-background shadow-2xl flex-1">
+              {/* ── Right: scrollable content ── */}
               <motion.div
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.45, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                className="max-w-2xl mx-auto px-6 pt-5 pb-28 space-y-10"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+                className="flex-1 md:min-h-screen"
+                style={{
+                  background: "var(--background)",
+                  padding: "clamp(1.5rem, 4vw, 3rem) clamp(1.5rem, 5vw, 3.5rem)",
+                  paddingBottom: "5rem",
+                  maxWidth: "520px",
+                  width: "100%",
+                }}
               >
-                <div className="flex justify-center">
-                  <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+                {/* Drag pill — mobile only */}
+                <div className="md:hidden flex justify-center mb-6 -mt-2">
+                  <div
+                    className="w-10 h-1 rounded-full"
+                    style={{ background: "var(--border)" }}
+                  />
                 </div>
 
                 {loading ? (
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />
-                    ))}
+                  <div className="space-y-5 mt-4">
+                    <SkeletonBlock h="h-6" />
+                    <SkeletonBlock h="h-32" />
+                    <SkeletonBlock h="h-24" />
                   </div>
                 ) : landmark ? (
-                  <>
+                  <div className="space-y-10">
+
                     {/* About */}
-                    <section className="space-y-3">
-                      <p className="text-xs tracking-[0.2em] uppercase text-muted-foreground font-medium">About</p>
-                      <p className="text-base md:text-lg leading-relaxed font-light text-foreground/80">
+                    <section>
+                      <SectionLabel>About</SectionLabel>
+                      <p
+                        style={{
+                          fontFamily: "'Playfair Display', Georgia, serif",
+                          fontSize: "clamp(1rem, 1.8vw, 1.15rem)",
+                          lineHeight: 1.8,
+                          color: "var(--foreground)",
+                          opacity: 0.85,
+                          fontWeight: 400,
+                        }}
+                      >
                         {landmark.description}
                       </p>
                     </section>
 
                     {/* Location */}
-                    <section className="space-y-3">
-                      <p className="text-xs tracking-[0.2em] uppercase text-muted-foreground font-medium">Location</p>
-                      <div className="flex flex-wrap gap-3">
-                        <Card className="inline-flex border bg-muted/40">
-                          <CardContent className="flex items-center gap-3 px-5 py-3">
-                            <MapPin className="w-4 h-4 text-green-500 shrink-0" />
-                            <span className="text-sm font-mono text-muted-foreground">
+                    {landmark.lat != null && landmark.lng != null && (
+                      <section>
+                        <SectionLabel>Location</SectionLabel>
+                        <div className="flex flex-wrap gap-3 items-center">
+                          <div
+                            className="flex items-center gap-2 px-4 py-2.5 rounded"
+                            style={{
+                              background: "var(--muted)",
+                              border: "1px solid var(--border)",
+                            }}
+                          >
+                            <MapPin
+                              className="w-3.5 h-3.5 shrink-0"
+                              style={{ color: "var(--village-accent, #C97F2A)" }}
+                            />
+                            <span
+                              style={{
+                                fontFamily: "monospace",
+                                fontSize: "12px",
+                                color: "var(--muted-foreground)",
+                                letterSpacing: "0.02em",
+                              }}
+                            >
                               {landmark.lat.toFixed(6)}° N · {landmark.lng.toFixed(6)}° E
                             </span>
-                          </CardContent>
-                        </Card>
-                        <Button asChild className="gap-2 rounded-xl bg-green-600 hover:bg-green-500 text-white">
+                          </div>
+
                           <a
                             href={`https://www.google.com/maps?q=${landmark.lat},${landmark.lng}`}
                             target="_blank"
                             rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2.5 rounded transition-opacity hover:opacity-80"
+                            style={{
+                              background: "var(--village-accent, #C97F2A)",
+                              color: "#0F0800",
+                              fontSize: "13px",
+                              fontWeight: 500,
+                              textDecoration: "none",
+                            }}
                           >
-                            <Map className="w-4 h-4" />
-                            View in Maps
+                            <Map className="w-3.5 h-3.5" />
+                            Open in Maps
                           </a>
-                        </Button>
-                      </div>
-                    </section>
+                        </div>
+                      </section>
+                    )}
 
-                    <Separator />
+                    {/* Rule */}
+                    <div
+                      className="w-full h-px"
+                      style={{ background: "var(--border)" }}
+                    />
 
                     {/* News */}
-                    <section className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Newspaper className="w-4 h-4 text-muted-foreground" />
-                        <p className="text-xs tracking-[0.2em] uppercase text-muted-foreground font-medium">Latest News</p>
-                      </div>
+                    <section>
+                      <SectionLabel>
+                        <span className="flex items-center gap-2">
+                          <Newspaper className="w-3 h-3" />
+                          Latest News
+                        </span>
+                      </SectionLabel>
+
                       {news.length > 0 ? (
-                        <div className="space-y-3">
-                          {news.map((item, i) => (
-                            <motion.div
+                        <div className="space-y-4">
+                          {news.map((item) => (
+                            <div
                               key={item._id}
-                              initial={{ opacity: 0, y: 16 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.08 * i }}
+                              className="rounded p-4 transition-colors"
+                              style={{
+                                background: "var(--card)",
+                                border: "1px solid var(--border)",
+                              }}
                             >
-                              <Card className="border bg-card hover:bg-muted/30 transition-colors duration-200">
-                                <CardContent className="p-5 space-y-2.5">
-                                  <Badge variant="secondary" className="capitalize text-xs">
-                                    {item.category}
-                                  </Badge>
-                                  <CardTitle className="text-base font-semibold leading-snug">{item.title}</CardTitle>
-                                  <p className="text-sm leading-relaxed text-muted-foreground">{item.body}</p>
-                                </CardContent>
-                              </Card>
-                            </motion.div>
+                              <span
+                                className="inline-block mb-2 px-2.5 py-0.5 rounded-full text-[10px] tracking-wider capitalize"
+                                style={{
+                                  background: "var(--village-accent-muted, rgba(201,127,42,0.15))",
+                                  color: "var(--village-accent, #C97F2A)",
+                                  fontFamily: "'DM Sans', sans-serif",
+                                  letterSpacing: "0.1em",
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                {item.category}
+                              </span>
+                              <h4
+                                style={{
+                                  fontFamily: "'Playfair Display', Georgia, serif",
+                                  fontSize: "15px",
+                                  fontWeight: 600,
+                                  lineHeight: 1.4,
+                                  color: "var(--foreground)",
+                                  marginBottom: "6px",
+                                }}
+                              >
+                                {item.title}
+                              </h4>
+                              <p
+                                style={{
+                                  fontSize: "13px",
+                                  lineHeight: 1.7,
+                                  color: "var(--muted-foreground)",
+                                }}
+                              >
+                                {item.body}
+                              </p>
+                            </div>
                           ))}
                         </div>
                       ) : (
-                        <Card className="border border-dashed bg-muted/20">
-                          <CardContent className="py-10 text-center">
-                            <Newspaper className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-                            <p className="text-sm text-muted-foreground">No news yet. Check back soon.</p>
-                          </CardContent>
-                        </Card>
+                        <p
+                          style={{
+                            fontSize: "13px",
+                            color: "var(--muted-foreground)",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          No news yet. Check back soon.
+                        </p>
                       )}
                     </section>
 
-                    <Separator />
+                    {/* Rule */}
+                    <div
+                      className="w-full h-px"
+                      style={{ background: "var(--border)" }}
+                    />
 
                     {/* Events */}
-                    <section className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                        <p className="text-xs tracking-[0.2em] uppercase text-muted-foreground font-medium">Upcoming Events</p>
-                      </div>
+                    <section>
+                      <SectionLabel>
+                        <span className="flex items-center gap-2">
+                          <CalendarDays className="w-3 h-3" />
+                          Upcoming Events
+                        </span>
+                      </SectionLabel>
+
                       {events.length > 0 ? (
-                        <div className="space-y-3">
-                          {events.map((event, i) => (
-                            <motion.div
+                        <div className="space-y-4">
+                          {events.map((event) => (
+                            <div
                               key={event._id}
-                              initial={{ opacity: 0, y: 16 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.08 * i }}
+                              className="rounded p-4 transition-colors"
+                              style={{
+                                background: "var(--card)",
+                                border: "1px solid var(--border)",
+                              }}
                             >
-                              <Card className="border bg-card hover:bg-muted/30 transition-colors duration-200">
-                                <CardContent className="p-5 space-y-2">
-                                  <div className="flex items-start justify-between gap-4">
-                                    <CardTitle className="text-base font-semibold leading-snug">{event.title}</CardTitle>
-                                    <Badge variant="outline" className="shrink-0 gap-1.5 text-xs">
-                                      <Clock className="w-3 h-3" />
-                                      {event.date}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm leading-relaxed text-muted-foreground">{event.description}</p>
-                                </CardContent>
-                              </Card>
-                            </motion.div>
+                              <div className="flex items-start justify-between gap-4 mb-2">
+                                <h4
+                                  style={{
+                                    fontFamily: "'Playfair Display', Georgia, serif",
+                                    fontSize: "15px",
+                                    fontWeight: 600,
+                                    lineHeight: 1.4,
+                                    color: "var(--foreground)",
+                                  }}
+                                >
+                                  {event.title}
+                                </h4>
+                                <span
+                                  className="shrink-0 px-2.5 py-0.5 rounded-full text-[11px] whitespace-nowrap"
+                                  style={{
+                                    border: "1px solid var(--border)",
+                                    color: "var(--muted-foreground)",
+                                    fontFamily: "'DM Sans', sans-serif",
+                                  }}
+                                >
+                                  {event.date}
+                                </span>
+                              </div>
+                              <p
+                                style={{
+                                  fontSize: "13px",
+                                  lineHeight: 1.7,
+                                  color: "var(--muted-foreground)",
+                                }}
+                              >
+                                {event.description}
+                              </p>
+                            </div>
                           ))}
                         </div>
                       ) : (
-                        <Card className="border border-dashed bg-muted/20">
-                          <CardContent className="py-10 text-center">
-                            <CalendarDays className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-                            <p className="text-sm text-muted-foreground">No upcoming events.</p>
-                          </CardContent>
-                        </Card>
+                        <p
+                          style={{
+                            fontSize: "13px",
+                            color: "var(--muted-foreground)",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          No upcoming events.
+                        </p>
                       )}
                     </section>
 
-                    <div className="text-center pt-4">
-                      <p className="text-xs text-muted-foreground/50">Najarpur Village · Chandrapur, Rautahat, Nepal</p>
-                    </div>
-                  </>
+                    {/* Footer credit */}
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--muted-foreground)",
+                        opacity: 0.45,
+                        paddingTop: "1rem",
+                        borderTop: "1px solid var(--border)",
+                      }}
+                    >
+                      {village.footerAttribution}
+                    </p>
+                  </div>
                 ) : null}
               </motion.div>
             </div>

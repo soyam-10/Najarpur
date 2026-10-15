@@ -5,57 +5,68 @@ import { useEffect, useState, useRef } from "react";
 import { Landmark } from "@/types";
 import LandmarkCard from "@/components/ui/LandmarkCard";
 import LandmarkOverlay from "@/components/ui/LandmarkOverlay";
-import { motion, useInView } from "framer-motion";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { motion } from "framer-motion";
+import { village } from "@/config/village";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-screen bg-black flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <div className="w-8 h-8 border-2 border-green-400/30 border-t-green-400 rounded-full animate-spin mx-auto" />
-        <p className="text-green-400/60 tracking-widest text-xs uppercase">Loading Najarpur</p>
+    <div
+      className="w-full h-screen flex items-center justify-center map-hero"
+      aria-label={`Loading ${village.loadingLabel}`}
+    >
+      <div className="text-center">
+        <div
+          className="w-6 h-6 rounded-full mx-auto mb-5"
+          style={{
+            border: `1.5px solid ${village.accentColor}44`,
+            borderTopColor: village.accentColor,
+            animation: "spin 1s linear infinite",
+          }}
+        />
+        <p
+          style={{
+            fontSize: "10px",
+            letterSpacing: "0.25em",
+            textTransform: "uppercase",
+            color: `${village.accentColor}80`,
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          {village.loadingLabel}
+        </p>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   ),
 });
 
-function LandmarkCardSkeleton() {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-border">
-      <Skeleton className="h-48 w-full rounded-none" />
-      <div className="p-5 space-y-3">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-2/3" />
-      </div>
-    </div>
-  );
-}
-
-function LandmarkCardAnimated({ landmark, index }: { landmark: Landmark; index: number }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 40 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.08, ease: [0.25, 0.1, 0.25, 1] }}
-    >
-      <LandmarkCard landmark={landmark} />
-    </motion.div>
-  );
-}
+// ── Single orchestrated entrance — fires once on load ──────────────────────
+const ENTRANCE = {
+  location: { opacity: 0, y: -8 },
+  title: { opacity: 0, y: -6 },
+  rule: { scaleX: 0 },
+  tagline: { opacity: 0 },
+  hint: { opacity: 0, y: 12 },
+};
 
 export default function Home() {
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const [loading, setLoading] = useState(true);
-  const landmarksRef = useRef(null);
-  const landmarksTitleInView = useInView(landmarksRef, { once: true, margin: "-100px" });
+  const landmarksRef = useRef<HTMLElement>(null);
+
+  // Apply village accent CSS var on mount
+  useEffect(() => {
+    document.documentElement.style.setProperty("--village-accent", village.accentColor);
+    document.documentElement.style.setProperty(
+      "--village-accent-muted",
+      `${village.accentColor}26`
+    );
+    document.documentElement.style.setProperty(
+      "--village-accent-glow",
+      `${village.accentColor}66`
+    );
+  }, []);
 
   useEffect(() => {
     fetch("/api/landmarks")
@@ -67,165 +78,284 @@ export default function Home() {
   }, []);
 
   return (
-    <main
-      className="min-h-screen bg-background text-foreground transition-colors duration-300"
-      style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" }}
-    >
+    <main className="min-h-screen" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+      {/* Grain layer — very subtle film texture */}
+      <div className="grain" aria-hidden="true" />
+
       <LandmarkOverlay />
 
-      {/* 3D Map Hero — always dark */}
-      <section className="relative w-full h-screen overflow-hidden bg-black">
+      {/* ── 3D Map Hero — always dark ── */}
+      <section id="map-hero" className="relative w-full h-screen map-hero overflow-hidden">
         <MapCanvas />
 
-        {/* Grain texture */}
+        {/* Top vignette */}
         <div
-          className="absolute inset-0 pointer-events-none z-10 opacity-20"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "repeat",
-            backgroundSize: "128px",
-            mixBlendMode: "overlay",
-          }}
+          className="absolute inset-x-0 top-0 h-36 pointer-events-none z-10"
+          style={{ background: "linear-gradient(to bottom, rgba(15,8,0,0.7) 0%, transparent 100%)" }}
+          aria-hidden="true"
         />
 
-        {/* Vignettes */}
-        <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/60 to-transparent pointer-events-none z-10" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black to-transparent pointer-events-none z-10" />
+        {/* Bottom vignette */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-48 pointer-events-none z-10"
+          style={{ background: "linear-gradient(to top, rgba(15,8,0,1) 0%, transparent 100%)" }}
+          aria-hidden="true"
+        />
 
-        {/* Title */}
+        {/* ── Hero title — single orchestrated entrance ── */}
         <div className="absolute top-0 left-0 right-0 z-20 flex flex-col items-center pt-10 pointer-events-none">
           <motion.p
-            initial={{ opacity: 0, y: -10 }}
+            initial={ENTRANCE.location}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-xs tracking-[0.35em] uppercase mb-2 text-white/40"
+            transition={{ delay: 0.5, duration: 0.7 }}
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "rgba(245,236,215,0.38)",
+              fontFamily: "'DM Sans', sans-serif",
+              marginBottom: "10px",
+            }}
           >
-            Chandrapur · Rautahat · Nepal
+            {village.location}
           </motion.p>
+
           <motion.h1
-            initial={{ opacity: 0, y: -10 }}
+            initial={ENTRANCE.title}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-            className="text-5xl md:text-7xl font-bold tracking-tight text-white"
-            style={{ textShadow: "0 2px 40px rgba(0,0,0,0.6)" }}
+            transition={{ delay: 0.65, duration: 0.75, ease: [0.25, 0.1, 0.25, 1] }}
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: "clamp(3.2rem, 9vw, 7rem)",
+              fontWeight: 700,
+              letterSpacing: "-0.025em",
+              lineHeight: 1,
+              color: "#F5ECD7",
+              textAlign: "center",
+              textShadow: "0 4px 40px rgba(0,0,0,0.5)",
+            }}
           >
-            Najarpur
+            {village.name}
           </motion.h1>
+
+          {/* Accent rule under title */}
           <motion.div
-            initial={{ scaleX: 0 }}
+            initial={ENTRANCE.rule}
             animate={{ scaleX: 1 }}
-            transition={{ delay: 0.8, duration: 0.6 }}
-            className="mt-3 h-px w-16 bg-green-400/60"
+            transition={{ delay: 0.95, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+            style={{
+              height: "1px",
+              width: "3rem",
+              background: `linear-gradient(to right, transparent, ${village.accentColor}, transparent)`,
+              marginTop: "14px",
+              transformOrigin: "center",
+            }}
           />
+
+          <motion.p
+            initial={ENTRANCE.tagline}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.1, duration: 0.8 }}
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontStyle: "italic",
+              fontSize: "clamp(0.85rem, 1.8vw, 1.05rem)",
+              color: "rgba(245,236,215,0.42)",
+              marginTop: "12px",
+              letterSpacing: "0.01em",
+              textAlign: "center",
+            }}
+          >
+            {village.tagline}
+          </motion.p>
         </div>
 
-        {/* Bottom hint */}
+        {/* ── Bottom hint ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={ENTRANCE.hint}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3"
+          transition={{ delay: 1.4, duration: 0.6 }}
+          className="absolute bottom-8 left-1/2 z-20 flex flex-col items-center gap-4"
+          style={{ transform: "translateX(-50%)" }}
         >
-          <Badge
-            variant="outline"
-            className="text-white/50 border-white/10 rounded-full px-4 py-1.5 text-xs tracking-[0.2em] uppercase"
+          <span
+            className="px-4 py-2 rounded-full"
             style={{
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
-              background: "rgba(255,255,255,0.07)",
+              background: "rgba(15,8,0,0.5)",
+              border: "1px solid rgba(245,236,215,0.1)",
+              color: "rgba(245,236,215,0.45)",
+              fontSize: "11px",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            Click a marker to explore
-          </Badge>
+            Click a flame to explore
+          </span>
+
           <button
-            onClick={() => document.getElementById("landmarks")?.scrollIntoView({ behavior: "smooth" })}
-            className="flex flex-col items-center gap-1 group pointer-events-auto"
+            onClick={() => landmarksRef.current?.scrollIntoView({ behavior: "smooth" })}
+            aria-label="Scroll to landmarks"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "4px",
+            }}
           >
-            <span className="text-xs tracking-widest uppercase text-white/30">Scroll</span>
-            <motion.div
-              animate={{ y: [0, 6, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-              className="text-green-400/50 group-hover:text-green-400 transition-colors"
+            <span
+              style={{
+                fontSize: "9px",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "rgba(245,236,215,0.25)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </motion.div>
+              Scroll
+            </span>
+            <motion.svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={village.accentColor}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              animate={{ y: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+              style={{ opacity: 0.55 }}
+            >
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </motion.svg>
           </button>
         </motion.div>
       </section>
 
-      {/* Transition strip */}
-      <div className="h-16 bg-linear-to-b from-black to-background" />
+      {/* ── Transition ── */}
+      <div
+        style={{
+          height: "64px",
+          background: "linear-gradient(to bottom, #0F0800, var(--background))",
+        }}
+        aria-hidden="true"
+      />
 
-      {/* Landmarks section */}
-      <section id="landmarks" className="relative bg-background transition-colors duration-300">
-        <div ref={landmarksRef} className="max-w-6xl mx-auto px-6 pt-16 pb-12">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={landmarksTitleInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-            className="space-y-3"
-          >
-            <p className="text-xs tracking-[0.3em] uppercase text-green-600 dark:text-green-400/70 font-medium">
-              Discover
-            </p>
+      {/* ── Landmarks section ── */}
+      <section
+        ref={landmarksRef}
+        id="landmarks"
+        style={{ background: "var(--background)", paddingTop: "4rem", paddingBottom: "6rem" }}
+      >
+        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 clamp(1rem, 4vw, 2.5rem)" }}>
+
+          {/* Section header — no eyebrow label, just editorial heading */}
+          <div style={{ marginBottom: "3rem", maxWidth: "480px" }}>
             <h2
-              className="text-4xl md:text-5xl font-bold tracking-tight text-foreground"
-              style={{ letterSpacing: "-0.02em" }}
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: "clamp(2rem, 4vw, 3rem)",
+                fontWeight: 600,
+                letterSpacing: "-0.025em",
+                lineHeight: 1.15,
+                color: "var(--foreground)",
+                marginBottom: "14px",
+              }}
             >
-              Landmarks
+              Places that shape {village.name}
             </h2>
-            <p className="text-muted-foreground text-lg font-light max-w-md">
-              Every corner of Najarpur tells a story. Explore them all.
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: "15px",
+                lineHeight: 1.7,
+                color: "var(--muted-foreground)",
+                fontWeight: 300,
+              }}
+            >
+              Every corner of {village.name} holds a story. These are the places
+              where village life is lived.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ scaleX: 0, originX: 0 }}
-            animate={landmarksTitleInView ? { scaleX: 1 } : {}}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="mt-8 h-px w-24 bg-linear-to-r from-green-500/60 dark:from-green-400/60 to-transparent"
-          />
-        </div>
-
-        {/* Cards grid */}
-        <div className="max-w-6xl mx-auto px-6 pb-24">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Cards grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))",
+              gap: "1.25rem",
+            }}
+          >
             {loading
-              ? Array.from({ length: 6 }).map((_, i) => <LandmarkCardSkeleton key={i} />)
-              : landmarks.map((landmark, i) => (
-                <LandmarkCardAnimated key={landmark._id} landmark={landmark} index={i} />
-              ))}
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="animate-pulse rounded"
+                    style={{
+                      aspectRatio: "16/9",
+                      background: "var(--muted)",
+                    }}
+                  />
+                ))
+              : landmarks.map((landmark) => (
+                  <LandmarkCard key={landmark._id} landmark={landmark} />
+                ))}
           </div>
         </div>
       </section>
 
-      <Separator className="opacity-20" />
-
-      {/* Footer */}
-      <footer className="py-10 px-6 text-center bg-background">
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          className="space-y-2"
+      {/* ── Footer ── */}
+      <footer
+        style={{
+          borderTop: "1px solid var(--border)",
+          padding: "2.5rem clamp(1rem, 4vw, 2.5rem)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "1rem",
+          background: "var(--background)",
+        }}
+      >
+        <p
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: "12px",
+            color: "var(--muted-foreground)",
+            opacity: 0.6,
+          }}
         >
-          <p className="text-sm text-muted-foreground">
-            Designed & built by{" "}
-            <a
-              href="https://soyambajgain.com.np"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300 transition-colors font-medium"
-            >
-              Heisenberg
-            </a>
-          </p>
-          <p className="text-xs text-muted-foreground/50">
-            Preserving village stories, one landmark at a time.
-          </p>
-        </motion.div>
+          {village.name} · {village.location}
+        </p>
+        <p
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: "12px",
+            color: "var(--muted-foreground)",
+            opacity: 0.6,
+          }}
+        >
+          Built by{" "}
+          <a
+            href="https://soyambajgain.com.np"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: village.accentColor,
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+          >
+            Heisenberg
+          </a>
+          . Preserving village stories.
+        </p>
       </footer>
     </main>
   );

@@ -1,73 +1,125 @@
 "use client";
 
 import { Landmark } from "@/types";
-import { useRouter } from "next/navigation";
+import { useMapStore } from "@/store/mapStore";
 import Image from "next/image";
 
 interface Props {
   landmark: Landmark;
 }
 
+/**
+ * Film-still card — 16:9, full-bleed photo, name in Playfair at bottom.
+ * No content box below the image. No card shadow soup.
+ * Click zooms the 3D map to the landmark and opens the overlay.
+ * Scroll to the 3D map section first so the animation is visible.
+ */
 export default function LandmarkCard({ landmark }: Props) {
-  const router = useRouter();
+  const { setActiveLandmark } = useMapStore();
+
+  const handleClick = () => {
+    // Scroll to map so the zoom animation is visible
+    const hero = document.getElementById("map-hero");
+    if (hero) {
+      hero.scrollIntoView({ behavior: "smooth" });
+      // Small delay so the user sees the map before the zoom fires
+      setTimeout(() => setActiveLandmark(landmark._id!), 600);
+    } else {
+      setActiveLandmark(landmark._id!);
+    }
+  };
 
   return (
-    <div
-      onClick={() => router.push(`/landmarks/${landmark._id}`)}
-      className="group cursor-pointer rounded-2xl overflow-hidden relative bg-gray-50 dark:bg-white/3 border border-gray-100 dark:border-white/7 transition-all duration-400"
-      style={{ transition: "all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)" }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = "0 20px 60px rgba(0,0,0,0.12)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "none";
-      }}
+    <button
+      onClick={handleClick}
+      className="group relative block w-full text-left focus-visible:outline-none"
+      style={{ borderRadius: "6px", overflow: "hidden" }}
+      aria-label={`Explore ${landmark.name}`}
     >
-      {/* Image */}
-      <div className="relative h-48 w-full overflow-hidden bg-green-50 dark:bg-green-950/20">
+      {/* 16:9 image container */}
+      <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
         <Image
           src={landmark.coverImage}
           alt={landmark.name}
           fill
-          className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        <span
-          className="absolute top-3 right-3 text-xs px-2.5 py-1 rounded-full text-white/80"
+
+        {/* Base gradient — always dark at bottom for text legibility */}
+        <div
+          className="absolute inset-0"
           style={{
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            background: "rgba(0,0,0,0.35)",
-            border: "1px solid rgba(255,255,255,0.12)",
+            background:
+              "linear-gradient(to top, rgba(15,8,0,0.92) 0%, rgba(15,8,0,0.3) 50%, rgba(15,8,0,0.08) 100%)",
+          }}
+        />
+
+        {/* Hover overlay — warms and brightens slightly */}
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          style={{
+            background: "linear-gradient(to top, rgba(180,90,20,0.25) 0%, transparent 60%)",
+          }}
+        />
+
+        {/* Nepali name — top right, subtle */}
+        <span
+          className="absolute top-3 right-3 text-[10px] tracking-wider"
+          style={{
+            color: "rgba(245,236,215,0.55)",
+            fontFamily: "'DM Sans', sans-serif",
           }}
         >
           {landmark.nepaliName}
         </span>
-      </div>
 
-      {/* Content */}
-      <div className="p-5 space-y-2">
-        <h3
-          className="font-semibold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300"
-          style={{ letterSpacing: "-0.01em" }}
-        >
-          {landmark.name}
-        </h3>
-        <p className="text-sm leading-relaxed line-clamp-2 text-gray-400 dark:text-white/40">
-          {landmark.description}
-        </p>
-        <div className="flex items-center gap-1.5 pt-1">
-          <span className="text-xs text-green-600/70 dark:text-green-400/70 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-            Explore
-          </span>
-          <span className="text-xs text-green-600/70 dark:text-green-400/70 group-hover:text-green-600 dark:group-hover:text-green-400 group-hover:translate-x-1 transition-all duration-300">
-            →
-          </span>
+        {/* Landmark name — bottom, Playfair */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
+          <h3
+            className="font-display text-lg leading-snug text-white"
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
+              textShadow: "0 2px 12px rgba(0,0,0,0.8)",
+            }}
+          >
+            {landmark.name}
+          </h3>
+
+          {/* "View" indicator — appears on hover */}
+          <div
+            className="flex items-center gap-2 mt-1.5 transition-all duration-400 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0"
+          >
+            <div
+              className="h-px w-5 transition-all duration-500 group-hover:w-8"
+              style={{ background: "var(--village-accent, #C97F2A)" }}
+            />
+            <span
+              className="text-[11px] tracking-wider"
+              style={{
+                color: "var(--village-accent, #C97F2A)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Explore
+            </span>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Focus ring */}
+      <div
+        className="absolute inset-0 opacity-0 group-focus-visible:opacity-100 pointer-events-none transition-opacity"
+        style={{
+          boxShadow: "inset 0 0 0 2px var(--village-accent, #C97F2A)",
+          borderRadius: "6px",
+        }}
+      />
+    </button>
   );
 }
