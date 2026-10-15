@@ -75,11 +75,10 @@ export default function LandmarkOverlay() {
             }}
           >
             {/* ── Layout: side-by-side on md+, stacked on mobile ── */}
-            <div className="md:flex md:min-h-screen">
-
+            <div className="md:flex md:min-h-screen md:overflow-hidden">
               {/* ── Left: fixed-position hero image ── */}
               <div
-                className="relative w-full shrink-0 md:sticky md:top-0 md:self-start"
+                className="relative w-full shrink-0 md:w-1/2 md:sticky md:top-0 md:self-start md:h-screen"
                 style={{ height: "55vw", maxHeight: "100vh", minHeight: "260px" }}
               >
                 {/* Image */}
@@ -215,8 +214,11 @@ export default function LandmarkOverlay() {
                   background: "var(--background)",
                   padding: "clamp(1.5rem, 4vw, 3rem) clamp(1.5rem, 5vw, 3.5rem)",
                   paddingBottom: "5rem",
-                  maxWidth: "520px",
-                  width: "100%",
+                  width: "50%",
+                  overflowY: "auto",
+                  maxHeight: "100vh",
+                  position: "sticky",
+                  top: 0,
                 }}
               >
                 {/* Drag pill — mobile only */}
