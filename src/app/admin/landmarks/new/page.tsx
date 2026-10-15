@@ -24,12 +24,16 @@ export default function NewLandmark() {
             return;
         }
         setLoading(true);
-        const position = geoToPlane(parseFloat(form.lat), parseFloat(form.lng));
+        const lat = parseFloat(form.lat);
+        const lng = parseFloat(form.lng);
+        const position = geoToPlane(lat, lng);
         const payload = {
             name: form.name,
             nepaliName: form.nepaliName,
             description: form.description,
             position,
+            lat,
+            lng,
             coverImage: form.coverImage,
         };
         const res = await fetch("/api/landmarks", {

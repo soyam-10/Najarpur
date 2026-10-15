@@ -18,10 +18,9 @@ export default function EditNews() {
     }, []);
 
     useEffect(() => {
-        fetch("/api/news").then((r) => r.json()).then((data) => {
-            const item = data.data?.find((n: NewsItem) => n._id === id);
-            if (item) setForm(item);
-        });
+        fetch(`/api/news/${id}`)
+            .then(r => r.json())
+            .then(data => { if (data.success) setForm(data.data); });
     }, [id]);
 
     const handleSave = async () => {
